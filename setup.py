@@ -58,7 +58,11 @@ setup(
     # project is installed. For an analysis of "install_requires" vs pip's
     # requirements files see:
     # https://packaging.python.org/en/latest/technical.html#install-requires-vs-requirements-files
-    install_requires=['boto>=2.38.0'],
+    install_requires=[
+        'boto>=2.38.0',
+        'boto3>=1.4.4',
+        'ckantoolkit',
+    ],
 
     # If there are data files included in your packages that need to be
     # installed, specify them here.  If using Python 2.6 or less, then these
