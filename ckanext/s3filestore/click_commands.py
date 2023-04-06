@@ -12,6 +12,7 @@ storage_path = config.get('ckan.storage_path',
 sqlalchemy_url = config.get('sqlalchemy.url',
                             'postgresql://user:pass@localhost/db')
 bucket_name = config.get('ckanext.s3filestore.aws_bucket_name')
+folder = config.get('ckanext.s3filestore.aws_storage_path', '')
 acl = config.get('ckanext.s3filestore.acl', 'public-read')
 
 
@@ -64,8 +65,12 @@ def upload_resources():
 
     uploaded_resources = []
     for resource_id, file_name in resource_ids_and_names.items():
-        key = 'resources/{resource_id}/{file_name}'.format(
-            resource_id=resource_id, file_name=file_name)
+        if folder:
+            key = '{folder}/resources/{resource_id}/{file_name}'.format(
+                folder=folder,resource_id=resource_id, file_name=file_name)
+        else:
+            key = 'resources/{resource_id}/{file_name}'.format(
+                resource_id=resource_id, file_name=file_name)
         s3_connection.Object(bucket_name, key)\
             .put(Body=open(resource_ids_and_paths[resource_id],
                            u'rb'),
