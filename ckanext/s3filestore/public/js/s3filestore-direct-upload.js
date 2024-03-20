@@ -14,9 +14,15 @@ ckan.module('s3filestore-direct-upload', function($, _) {
             this._url = $('#field-image-url');
             this._save = $('[name=save]');
             this._id = $('input[name=id]');
-			this._bucket = this.options.bucket + '/resources/' + this._id.val();
 
+			this._save.on('click', this._onSaveClick);
+		},
 
+		_onPerformUpload: function(file, dataset_id, resource_id) {
+			console.log("In _onPerformUpload");
+			var self = this;
+			this._bucket = this.options.bucket + '/resources/' + resource_id;
+			var sandbox = this.sandbox;
 			Evaporate.create({
 				signerUrl: '/auth/signv4_upload',
 				aws_key: this.options.aws_key,
@@ -29,7 +35,7 @@ ckan.module('s3filestore-direct-upload', function($, _) {
 				computeContentMd5: true,
 				cryptoMd5Method: function (data) { return AWS.util.crypto.md5(data, 'base64'); },
 				cryptoHexEncodedHash256: function (data) { return AWS.util.crypto.sha256(data, 'hex'); },
-				logging: true,
+				logging: false,
 				s3FileCacheHoursAgo: 1,
 				allowS3ExistenceOptimization: true,
 				evaporateChanged: function (file, evaporatingCount) {
@@ -42,59 +48,58 @@ ckan.module('s3filestore-direct-upload', function($, _) {
 				}
 			})
 				.then(function (_e_) {
-					$('#field-image-upload').change(function (evt) {
-						file = evt.target.files[0];
-						var filePromises = [];
-						var file_id = 0;
+					var filePromises = [];
+					var file_id = 0;
 
-						var name = file.name;
+					var name = file.name;
+					name = name.toLowerCase().trim();
+					name = name.replace(/[^a-zA-Z0-9_. -]/g, '').replace(/ /g, '-');
+					name = name.replace(/-+/g, '-');
 
-						var fileKey = this._bucket + '/' + name;
+					var fileKey = this._bucket + '/' + name;
 
-						callback_methods = callbacks(file, fileKey);
+					callback_methods = callbacks(file, fileKey);
 
-						var promise = _e_.add({
-							name: name,
-							file: file,
-							started: callback_methods.started,
-							complete: callback_methods.complete,
-							cancelled: callback_methods.cancelled,
-							progress: callback_methods.progress,
-							error: callback_methods.error,
-							warn: callback_methods.warn,
-							paused: callback_methods.paused,
-							pausing: callback_methods.pausing,
-							resumed: callback_methods.resumed,
-							nameChanged: callback_methods.nameChanged
-						}
-						)
-							.then((function (requestedName) {
-								return function (awsKey) {
-									if (awsKey === requestedName) {
-										console.log(awsKey, 'successfully uploaded!');
-									} else {
-										console.log('Did not re-upload', requestedName, 'because it exists as', awsKey);
-									}
+					var promise = _e_.add({
+						name: name,
+						file: file,
+						started: callback_methods.started,
+						complete: callback_methods.complete,
+						cancelled: callback_methods.cancelled,
+						progress: callback_methods.progress,
+						error: callback_methods.error,
+						warn: callback_methods.warn,
+						paused: callback_methods.paused,
+						pausing: callback_methods.pausing,
+						resumed: callback_methods.resumed,
+						nameChanged: callback_methods.nameChanged
+					}
+					)
+						.then((function (requestedName) {
+							return function (awsKey) {
+								if (awsKey === requestedName) {
+									console.log(awsKey, 'successfully uploaded!');
+								} else {
+									console.log('Did not re-upload', requestedName, 'because it exists as', awsKey);
 								}
-							})(name)
-							);
+							}
+						})(name)
+						);
 
-						filePromises.push(promise);
+					filePromises.push(promise);
 
-						callback_methods.progress_clock.attr('file_id', file_id);
+					callback_methods.progress_line.attr('file_id', file_id);
 
-						["#pause-all", "#pause-all-force", "#cancel-all"].forEach(function (v) { $(v).show(); });
+					["#pause-all", "#pause-all-force", "#cancel-all"].forEach(function (v) { $(v).show(); });
 
-						allCompleted = Promise.all(filePromises)
-							.then(function () {
-								console.log('All files were uploaded successfully.');
-							}, function (reason) {
-								console.log('All files were not uploaded successfully:', reason);
-							})
+					allCompleted = Promise.all(filePromises)
+						.then(function () {
+							console.log('All files were uploaded successfully.');
+							self._onFinishUpload();
+						}, function (reason) {
+							console.log('All files were not uploaded successfully:', reason);
+						})
 
-						$(evt.target).val('');
-
-					});
 		
 				$("#pause-all").hide().click(function () {
 					_e_.pause();
@@ -115,37 +120,37 @@ ckan.module('s3filestore-direct-upload', function($, _) {
 		
 				function callbacks(file, fileKey) {
 		
-					var progress_clock = $('<div class="progress-clock"/>'),
-							clock,
+					var progress_line = $('<div class="progress-line"/>'),
+							line,
 							progress,
 							file_id;
 		
 					$('#progress-container')
-							.append(progress_clock);
+							.append(progress_line);
 		
-					progress_clock
+					progress_line
 							.append('<span>' + file.name + '</span>')
-							.append('<div class="circle"/>');
+							.append('<div class="line"/>');
 					var cancel = $('<button class="cancel btn btn-danger btn-xs glyphicon glyphicon-stop" title="Cancel"></button>')
 							.click(function () {
 								console.log('canceling', fileKey);
 								_e_.cancel(fileKey);
 							});
-					progress_clock.append(cancel);
+					progress_line.append(cancel);
 		
 					var pause = $('<button class="pause btn btn-warning btn-xs glyphicon glyphicon-pause" title="Pause"></button>')
 							.click(function () {
 								console.log('pausing', fileKey);
 								_e_.pause(fileKey);
 							});
-					progress_clock.append(pause);
+					progress_line.append(pause);
 		
 					var forcePause = $('<button class="pause btn btn-primary btn-xs glyphicon glyphicon glyphicon-off" title="Force Pause"></button>')
 							.click(function () {
 								console.log('force pausing', fileKey);
 								_e_.pause(fileKey, {force: true});
 							});
-					progress_clock.append(forcePause);
+					progress_line.append(forcePause);
 		
 					var resume = $('<button class="resume btn btn-success btn-xs glyphicon glyphicon-play" title="Resume"></button>').hide()
 							.hide()
@@ -153,19 +158,20 @@ ckan.module('s3filestore-direct-upload', function($, _) {
 								console.log('resuming', fileKey);
 								_e_.resume(fileKey);
 							});
-					progress_clock.append(resume);
+					progress_line.append(resume);
 		
 					var status = $('<span class="status"></span>');
-					progress_clock.append(status);
+					progress_line.append(status);
 					var speed = $('<span class="speed">786 Kbs</span>');
-					progress_clock.append(speed);
+					progress_line.append(speed);
 		
-					clock = new ProgressBar.Line(progress_clock.find('.circle')[0], {
-						strokeWidth: 4,
+					line = new ProgressBar.Line(progress_line.find('.line')[0], {
+						strokeWidth: 10,
 						easing: 'easeInOut',
-						trailWidth: 1,
+						trailWidth: 2,
+						trailColor: '#eee',
 						duration: 1400,
-						svgStyle: {width: '100%', height: '100%'},
+						svgStyle: {width: '100%', height: '20px'},
 						text: {
 							value: '',
 							style: {
@@ -185,12 +191,12 @@ ckan.module('s3filestore-direct-upload', function($, _) {
 						}
 					});
 		
-					progress_clock.find('svg path').removeAttr('stroke');
-					progress_clock.find('.progressbar-text').css('color', '');
+					progress_line.find('svg path').removeAttr('stroke');
+					progress_line.find('.progressbar-text').css('color', '');
 		
 		
 					function markComplete(className) {
-						progress_clock.addClass(className);
+						progress_line.addClass(className);
 						status.text(className);
 					}
 		
@@ -202,7 +208,7 @@ ckan.module('s3filestore-direct-upload', function($, _) {
 								'Speed:', data && data.speed ? data.speed : '',
 								'Formatted speed:', data && data.speed ? data.readableSpeed + 's' : '',
 								'Minutes left:', data && data.secondsLeft ? Math.round(data.secondsLeft / 60) : '')
-							clock.animate(progressValue);
+							line.animate(progressValue);
 							if(data) {
 							var xferRate = data.speed ? '<br />' + data.readableSpeed + "s" : '',
 								remaining = data.secondsLeft ? '<br />' + Math.round(data.secondsLeft / 60) + 'm left' : '';
@@ -215,54 +221,54 @@ ckan.module('s3filestore-direct-upload', function($, _) {
 							pause.show();
 							forcePause.show();
 							resume.hide();
-							progress_clock.addClass('evaporating');
+							progress_line.addClass('evaporating');
 							status.text('evaporating');
 						},
 						error: function (msg) {
 							var m = $('<div/>').append(msg);
 							var html = $('<small/>').html(m);
 							markComplete('error');
-							clock.animate(progress);
-							progress_clock.removeClass('evaporating warning');
+							line.animate(progress);
+							progress_line.removeClass('evaporating warning');
 						},
 						cancelled: function () {
-							clock.animate(progress);
+							line.animate(progress);
 							markComplete('canceled');
-							progress_clock.removeClass('evaporating warning paused pausing');
+							progress_line.removeClass('evaporating warning paused pausing');
 							cancel.hide();
 							resume.hide();
 							pause.hide();
 							forcePause.hide();
 						},
 						pausing: function () {
-							clock.animate(progress);
+							line.animate(progress);
 							markComplete('pausing');
 							$("#resume").show();
 							pause.hide();
 							forcePause.hide();
 		
-							progress_clock.removeClass('evaporating warning');
+							progress_line.removeClass('evaporating warning');
 						},
 						paused: function () {
-							clock.animate(progress);
+							line.animate(progress);
 							markComplete('paused');
 							pause.hide();
 							forcePause.hide();
 		
 							resume.show();
 							$("#resume").show();
-							progress_clock.removeClass('evaporating warning pausing');
+							progress_line.removeClass('evaporating warning pausing');
 						},
 						resumed: function () {
-							clock.animate(progress);
+							line.animate(progress);
 							markComplete('');
 							resume.hide();
-							progress_clock.removeClass('pausing paused');
+							progress_line.removeClass('pausing paused');
 						},
 						warn: function (msg) {
 							var m = $('<small/>').html(msg);
 							var html = $('<div/>').append(m);
-							clock.animate(progress)
+							line.animate(progress)
 						},
 						nameChanged: function (awsKey) {
 							console.log('Evaporate will use existing S3 upload for', awsKey,
@@ -271,12 +277,12 @@ ckan.module('s3filestore-direct-upload', function($, _) {
 						complete: function (_xhr, awsKey, stats){
 							var m = $('<small/>').html(awsKey + ' - Completed');
 							var html = $('<div/>').append(m);
-							clock.animate(1);
-							progress_clock.removeClass('evaporating warning');
+							line.animate(1);
+							progress_line.removeClass('evaporating warning');
 							markComplete('completed');
 							console.log('Stats for', decodeURIComponent(awsKey), stats);
 						},
-						progress_clock: progress_clock
+						progress_line: progress_line
 					}
 				}
 				},
@@ -284,7 +290,109 @@ ckan.module('s3filestore-direct-upload', function($, _) {
 				$("div.errors").html('Evaporate failed to initialize: ' + reason + '. Change parameters and refresh page.');
 				});
 
-		}
+		},
+
+		_onSaveClick: function(event, pass) {
+            event.preventDefault();
+			var formData = this._form.serializeArray().reduce(
+                function (result, item) {
+                    result[item.name] = item.value;
+                    return result;
+            }, {});
+
+			console.log(formData);
+            var dataset_id = this.options.package_id;
+			console.log("Dataset id:" + dataset_id);
+            try {
+                this._onDisableSave(true);
+                this._pressedSaveButton = event.target.value;
+                this._onSaveForm();
+            } catch(error){
+                console.log(error);
+                this._onDisableSave(false);
+            }
+        },
+
+        _onSaveForm: function() {
+			console.log("In Save form");
+            var file = this._file[0].files[0];
+            var self = this;
+            var formData = this._form.serializeArray().reduce(
+                function (result, item) {
+                    result[item.name] = item.value;
+                    return result;
+            }, {});
+
+            formData.url = file.name;
+            formData.package_id = this.options.package_id;
+			console.log("formData.package_id:" + formData.package_id);
+            formData.url_type = 'upload';
+            var action = formData.id ? 'resource_update' : 'resource_create';
+            this.sandbox.client.call(
+                'POST',
+                action,
+                formData,
+                function (data) {
+                    var result = data.result;
+                    self._packageId = result.package_id;
+                    self._resourceId = result.id;
+
+					document.getElementById("content").scrollIntoView();
+                    self._onPerformUpload(file, formData.package_id, self._resourceId);
+                    self._id.val(result.id);
+                    self.sandbox.notify(
+                        result.id,
+                        self.i18n(action, {id: result.id}),
+                        'success'
+                    );
+                },
+                function (err, st, msg) {
+                    self.sandbox.notify(
+                        'Error',
+                        msg,
+                        'error'
+                    );
+                    self._onHandleError('Unable to save resource');
+                }
+            );
+
+        },
+
+        _onDisableSave: function (value) {
+            this._save.attr('disabled', value);
+        },
+
+        _onFinishUpload: function() {
+            var self = this;
+            var keepDraft = this._pressedSaveButton == 'again' || this._pressedSaveButton == 'go-dataset';
+            
+			self._onDisableSave(false);
+
+			if (self._resourceId && self._packageId){
+				self.sandbox.notify(
+					'Success',
+					self.i18n('upload_completed'),
+					'success'
+				);
+				if (self._pressedSaveButton == 'again') {
+					var path = '/dataset/new_resource/';
+				} else if (self._pressedSaveButton == 'go-dataset') {
+					var path = '/dataset/edit/';
+				} else {
+					var path = '/dataset/';
+				}
+				var redirect_url = self.sandbox.url(path + self._packageId);
+
+				self._form.attr('action', redirect_url);
+				self._form.attr('method', 'GET');
+				self.$('[name]').attr('name', null);
+				setTimeout(function(){
+					self._form.submit();
+				}, 3000);
+
+			}
+                
+        }
 
 	};
 });
