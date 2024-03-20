@@ -1,0 +1,29 @@
+{% extends "page.html" %}
+
+{% block styles %}
+   {{ super() }}
+   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.6/css/bootstrap.css" crossorigin="anonymous">
+   {% asset 's3filestore/evaporate_css' %}
+{% endblock %}
+
+{% block scripts %}
+   {{ super() }}
+   {% asset 's3filestore/evaporate_js' %}
+{% endblock %}
+
+{% block primary_content %}
+  {{ super() }}
+
+   {% block evaporate_example %}
+      <div class="container-fluid">
+         <input type="file" id="file"/>
+         <button type="button" id="pause-all" class="btn btn-warning btn-sm glyphicon glyphicon-pause" title="Pause All"></button>
+         <button type="button" id="pause-all-force" class="btn btn-primary btn-sm glyphicon glyphicon-off" title="Force Pause All"></button>
+         <button type="button" id="resume" class="btn btn-success btn-sm glyphicon glyphicon-play" title="Resume All"></button>
+         <button type="button" id="cancel-all" class="btn btn-danger btn-sm glyphicon glyphicon-stop" title="Cancel All"></button>
+         <div><br/>Total parts in-progress: <span id="totalParts">0</span></div>
+         <div id="progress-container"></div>
+      </div>
+
+   {% endblock %}
+{% endblock %}

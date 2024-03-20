@@ -1,0 +1,24 @@
+{% ckan_extends %}
+
+{% block form %}
+    {% asset 's3filestore/evaporate_js' %}
+    {% asset 's3filestore/evaporate_css' %}
+    <div
+        data-module="s3filestore-direct-upload"
+        data-module-bucket="{{ h.s3filestore_get_bucket }}"
+        data-module-aws_key="{{ h.s3filestore_get_aws_key }}"
+        data-module-host_url="{{ h.s3filestore_get_host_url }}"
+        data-module-region="{{ h.s3filestore_get_region }}"
+    >
+    {# <label class="control-label" for="files">Direct S3 Upload</label>
+    <input type="file" id="file"/>
+    <button type="button" id="pause-all" class="btn btn-warning btn-sm glyphicon glyphicon-pause" title="Pause All"></button>
+    <button type="button" id="pause-all-force" class="btn btn-primary btn-sm glyphicon glyphicon-off" title="Force Pause All"></button>
+    <button type="button" id="resume" class="btn btn-success btn-sm glyphicon glyphicon-play" title="Resume All"></button>
+    <button type="button" id="cancel-all" class="btn btn-danger btn-sm glyphicon glyphicon-stop" title="Cancel All"></button>
+    <div><br/>Total parts in-progress: <span id="totalParts">0</span></div> #}
+    <div id="progress-container"></div>
+    {{ super() }}
+
+    </div>
+{% endblock %}
