@@ -266,11 +266,13 @@ ckan.module('s3filestore-direct-upload', function($, _) {
 					document.getElementById("content").scrollIntoView();
                     self._onPerformUpload(file, formData.package_id, self._resourceId);
                     self._id.val(result.id);
-                    self.sandbox.notify(
-                        result.id,
-                        self.i18n(action, {id: result.id}),
-                        'success'
-                    );
+					self._changeTaskState(self._resourceId)
+					// this notify may not be needed
+                    // self.sandbox.notify(
+                    //     result.id,
+                    //     self.i18n(action, {id: result.id}),
+                    //     'success'
+                    // );
                 },
                 function (err, st, msg) {
                     self.sandbox.notify(
@@ -288,35 +290,86 @@ ckan.module('s3filestore-direct-upload', function($, _) {
             this._save.attr('disabled', value);
         },
 
-        _onFinishUpload: function() {
+        _changeTaskState: function(resource_id) {
+			// change the task state to error so retrying datastore submit works
             var self = this;
-            var keepDraft = this._pressedSaveButton == 'again' || this._pressedSaveButton == 'go-dataset';
-            
-			self._onDisableSave(false);
+			// get task data
+            this.sandbox.client.call(
+                'POST',
+                'task_status_show',
+                {
+                    'entity_id': resource_id,
+					'task_type': 'datapusher',
+					'key': 'datapusher'
+                },
+                function (data) {
+                    console.log(data);
+					var _task = data.result;
 
-			if (self._resourceId && self._packageId){
-				self.sandbox.notify(
-					'Success',
-					self.i18n('upload_completed'),
-					'success'
-				);
-				if (self._pressedSaveButton == 'again') {
-					var path = '/dataset/new_resource/';
-				} else if (self._pressedSaveButton == 'go-dataset') {
-					var path = '/dataset/edit/';
-				} else {
-					var path = '/dataset/';
-				}
-				var redirect_url = self.sandbox.url(path + self._packageId);
+					_task.state = "error";
+					self.sandbox.client.call(
+						'POST',
+						'task_status_update',
+						_task,
+						function (data) {
+							console.log(data);
+						},
+						function (err) {
+							console.log(err);
+						}
+					);
+                },
+                function (err) {
+                    console.log(err);
+                }
+            );
 
-				self._form.attr('action', redirect_url);
-				self._form.attr('method', 'GET');
-				self.$('[name]').attr('name', null);
-				setTimeout(function(){
-					self._form.submit();
-				}, 3000);
+        },
 
-			}
+        _onFinishUpload: function() {
+            var self = this;			
+
+            this.sandbox.client.call(
+                'POST',
+                'datapusher_submit',
+                {
+                    'resource_id': this._resourceId,
+                    'ignore_hash': true
+                },
+                function (data) {
+					console.log(data);
+                    self._onDisableSave(false);
+
+                    if (self._resourceId && self._packageId){
+                        self.sandbox.notify(
+                            'Success',
+                            self.i18n('upload_completed'),
+                            'success'
+                        );
+                        // self._form.remove();
+                        if (self._pressedSaveButton == 'again') {
+                            var path = '/dataset/new_resource/';
+                        } else if (self._pressedSaveButton == 'go-dataset') {
+                            var path = '/dataset/edit/';
+                        } else {
+                            var path = '/dataset/';
+                        }
+                        var redirect_url = self.sandbox.url(path + self._packageId);
+
+                        self._form.attr('action', redirect_url);
+                        self._form.attr('method', 'GET');
+                        self.$('[name]').attr('name', null);
+                        setTimeout(function(){
+                            self._form.submit();
+                        }, 3000);
+
+                    }
+                },
+                function (err) {
+                    console.log(err);
+                    self._onHandleError(self.i18n('unable_to_finish'));
+                }
+            );
                 
         }
 
