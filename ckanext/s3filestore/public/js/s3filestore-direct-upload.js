@@ -216,6 +216,9 @@ ckan.module('s3filestore-direct-upload', function($, _) {
 		},
 
 		_onSaveClick: function(event, pass) {
+            if (pass || !window.FileList || !this._file || !this._file.val()) {
+                return;
+            }
             event.preventDefault();
 			var formData = this._form.serializeArray().reduce(
                 function (result, item) {
