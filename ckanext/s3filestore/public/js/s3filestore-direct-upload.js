@@ -63,16 +63,11 @@ ckan.module('s3filestore-direct-upload', function($, _) {
 					var promise = _e_.add({
 						name: name,
 						file: file,
-						started: callback_methods.started,
-						complete: callback_methods.complete,
-						cancelled: callback_methods.cancelled,
 						progress: callback_methods.progress,
+						started: callback_methods.started,
 						error: callback_methods.error,
 						warn: callback_methods.warn,
-						paused: callback_methods.paused,
-						pausing: callback_methods.pausing,
-						resumed: callback_methods.resumed,
-						nameChanged: callback_methods.nameChanged
+						complete: callback_methods.complete
 					}
 					)
 						.then((function (requestedName) {
@@ -131,34 +126,6 @@ ckan.module('s3filestore-direct-upload', function($, _) {
 					progress_line
 							.append('<span>' + file.name + '</span>')
 							.append('<div class="line"/>');
-					var cancel = $('<button class="cancel btn btn-danger btn-xs glyphicon glyphicon-stop" title="Cancel"></button>')
-							.click(function () {
-								console.log('canceling', fileKey);
-								_e_.cancel(fileKey);
-							});
-					progress_line.append(cancel);
-		
-					var pause = $('<button class="pause btn btn-warning btn-xs glyphicon glyphicon-pause" title="Pause"></button>')
-							.click(function () {
-								console.log('pausing', fileKey);
-								_e_.pause(fileKey);
-							});
-					progress_line.append(pause);
-		
-					var forcePause = $('<button class="pause btn btn-primary btn-xs glyphicon glyphicon glyphicon-off" title="Force Pause"></button>')
-							.click(function () {
-								console.log('force pausing', fileKey);
-								_e_.pause(fileKey, {force: true});
-							});
-					progress_line.append(forcePause);
-		
-					var resume = $('<button class="resume btn btn-success btn-xs glyphicon glyphicon-play" title="Resume"></button>').hide()
-							.hide()
-							.click(function () {
-								console.log('resuming', fileKey);
-								_e_.resume(fileKey);
-							});
-					progress_line.append(resume);
 		
 					var status = $('<span class="status"></span>');
 					progress_line.append(status);
@@ -197,7 +164,7 @@ ckan.module('s3filestore-direct-upload', function($, _) {
 		
 					function markComplete(className) {
 						progress_line.addClass(className);
-						status.text(className);
+						status.text(className.charAt(0).toUpperCase() + className.slice(1));
 					}
 		
 					return {
@@ -218,11 +185,8 @@ ckan.module('s3filestore-direct-upload', function($, _) {
 						started: function (fid) {
 							console.log('started', fid)
 							file_id = fid;
-							pause.show();
-							forcePause.show();
-							resume.hide();
 							progress_line.addClass('evaporating');
-							status.text('evaporating');
+							status.text('Uploading');
 						},
 						error: function (msg) {
 							var m = $('<div/>').append(msg);
@@ -231,56 +195,15 @@ ckan.module('s3filestore-direct-upload', function($, _) {
 							line.animate(progress);
 							progress_line.removeClass('evaporating warning');
 						},
-						cancelled: function () {
-							line.animate(progress);
-							markComplete('canceled');
-							progress_line.removeClass('evaporating warning paused pausing');
-							cancel.hide();
-							resume.hide();
-							pause.hide();
-							forcePause.hide();
-						},
-						pausing: function () {
-							line.animate(progress);
-							markComplete('pausing');
-							$("#resume").show();
-							pause.hide();
-							forcePause.hide();
-		
-							progress_line.removeClass('evaporating warning');
-						},
-						paused: function () {
-							line.animate(progress);
-							markComplete('paused');
-							pause.hide();
-							forcePause.hide();
-		
-							resume.show();
-							$("#resume").show();
-							progress_line.removeClass('evaporating warning pausing');
-						},
-						resumed: function () {
-							line.animate(progress);
-							markComplete('');
-							resume.hide();
-							progress_line.removeClass('pausing paused');
-						},
 						warn: function (msg) {
 							var m = $('<small/>').html(msg);
 							var html = $('<div/>').append(m);
 							line.animate(progress)
 						},
-						nameChanged: function (awsKey) {
-							console.log('Evaporate will use existing S3 upload for', awsKey,
-									'rather than the requested object name', file_id)
-						},
 						complete: function (_xhr, awsKey, stats){
-							var m = $('<small/>').html(awsKey + ' - Completed');
-							var html = $('<div/>').append(m);
 							line.animate(1);
 							progress_line.removeClass('evaporating warning');
 							markComplete('completed');
-							console.log('Stats for', decodeURIComponent(awsKey), stats);
 						},
 						progress_line: progress_line
 					}
