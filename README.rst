@@ -60,6 +60,27 @@ To install ckanext-s3filestore:
 
      sudo service apache2 reload
 
+5. | Configure your S3 bucket for EvaporateJS to work, make sure your CORS settings for your S3
+     bucket looks similar to what is provided below.
+   | (The PUT allowed method and the ETag exposed header are critical).
+
+   The ``DELETE`` method is required to support aborting multipart
+   uploads.
+
+   .. code:: xml
+
+      <CORSConfiguration>
+          <CORSRule>
+              <AllowedOrigin>https://*.yourdomain.com</AllowedOrigin>
+              <AllowedOrigin>http://*.yourdomain.com</AllowedOrigin>
+              <AllowedMethod>PUT</AllowedMethod>
+              <AllowedMethod>POST</AllowedMethod>
+              <AllowedMethod>DELETE</AllowedMethod>
+              <AllowedMethod>GET</AllowedMethod>
+              <ExposeHeader>ETag</ExposeHeader>
+              <AllowedHeader>*</AllowedHeader>
+          </CORSRule>
+      </CORSConfiguration>
 
 ---------------
 Config Settings
