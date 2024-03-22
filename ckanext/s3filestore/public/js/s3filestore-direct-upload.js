@@ -371,6 +371,15 @@ ckan.module('s3filestore-direct-upload', function($, _) {
                 }
             );
                 
+        },
+
+        _onHandleError: function (msg) {
+            this.sandbox.notify(
+                'Error',
+                msg,
+                'error'
+            );
+            this._onDisableSave(false);
         }
 
     };
