@@ -6,6 +6,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.sql import text
 from ckantoolkit import config
 from ckanext.s3filestore.uploader import BaseS3Uploader
+from botocore.exceptions import ClientError
 
 storage_path = config.get('ckan.storage_path',
                           '/var/lib/ckan/default/resources')
@@ -126,3 +127,44 @@ def upload_assets():
     click.secho('Done, uploaded {0} resources to S3'.format(
         len(uploaded_resources)),
         fg=u'green', bold=True)
+
+@click.command(u's3-fix-cors',
+               short_help=u'Fixes CORS for the '
+                          u'configured s3 bucket')
+def fix_cors():
+    site_url = config.get('ckan.site_url')
+    if site_url.startswith('https://'):
+        origins = ['https://'+site_url[8:], 'http://'+site_url[8:]]
+    elif site_url.startswith('http://'):
+        origins = ['https://'+site_url[7:], 'http://'+site_url[7:]]
+
+    cors_configuration = {
+        'CORSRules': [{
+            'AllowedHeaders': ['*'],
+            'AllowedMethods': ['GET', 'PUT', 'POST', 'DELETE'],
+            'AllowedOrigins': origins,
+            'ExposeHeaders': ['ETag']
+        }]
+    }
+
+    uploader = BaseS3Uploader()
+    s3_client = uploader.get_s3_client()
+
+    def get_bucket_cors():
+        try:
+            response = s3_client.get_bucket_cors(Bucket=bucket_name)
+        except ClientError as e:
+            if e.response['Error']['Code'] == 'NoSuchCORSConfiguration':
+                print("No CORS configuration on bucket %s" % bucket_name)
+            else:
+                # AllAccessDisabled error == bucket not found
+                print(e)
+
+        return response['CORSRules']
+    print("Current CORS Rules: %r" % get_bucket_cors())
+
+    s3_client.put_bucket_cors(Bucket=bucket_name,
+                              CORSConfiguration=cors_configuration)
+    
+
+    print("Updated CORS Rules: %r" % get_bucket_cors())

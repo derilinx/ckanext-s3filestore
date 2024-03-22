@@ -4,7 +4,7 @@ import ckantoolkit as toolkit
 
 import ckanext.s3filestore.uploader
 from ckanext.s3filestore.views import resource, uploads
-from ckanext.s3filestore.click_commands import upload_resources, upload_assets
+from ckanext.s3filestore.click_commands import upload_resources, upload_assets, fix_cors
 
 
 class S3FileStorePlugin(plugins.SingletonPlugin):
@@ -74,7 +74,7 @@ class S3FileStorePlugin(plugins.SingletonPlugin):
     # IClick
 
     def get_commands(self):
-        return [upload_resources, upload_assets]
+        return [upload_resources, upload_assets, fix_cors]
 
     # ITemplateHelpers
     def get_helpers(self):
