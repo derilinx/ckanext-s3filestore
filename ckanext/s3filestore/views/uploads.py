@@ -83,17 +83,11 @@ def signv4_upload():
 
     return r
 
-def evaporate_example():
-    context = {}
-
-    return toolkit.render('evaporate_example/evaporate_example.html', extra_vars = context)
 
 s3_uploads.add_url_rule(u'/uploads/<upload_to>/<filename>',
                         view_func=uploaded_file_redirect)
 s3_uploads.add_url_rule(u'/auth/signv4_upload',
                         view_func=signv4_upload)
-s3_uploads.add_url_rule(u'/evaporate_example',
-                        view_func=evaporate_example)
 
 
 def get_blueprints():
