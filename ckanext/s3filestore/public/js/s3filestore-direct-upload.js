@@ -38,6 +38,7 @@ ckan.module('s3filestore-direct-upload', function($, _) {
                 logging: false,
                 s3FileCacheHoursAgo: 1,
                 allowS3ExistenceOptimization: true,
+                sendCanonicalRequestToSignerUrl: true,
                 evaporateChanged: function (file, evaporatingCount) {
                     $('#totalParts').text(evaporatingCount);
                     if (evaporatingCount > 0) {

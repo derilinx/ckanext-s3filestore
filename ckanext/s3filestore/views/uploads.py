@@ -6,8 +6,10 @@ import flask
 from botocore.exceptions import ClientError
 
 import ckantoolkit as toolkit
-from ckantoolkit import _, request
+from ckantoolkit import _, g, request
 import ckan.lib.base as base
+import ckan.model as model
+import ckan.authz as authz
 
 from hashlib import sha256
 import datetime
@@ -47,11 +49,41 @@ def uploaded_file_redirect(upload_to, filename):
 
     return redirect(url)
 
+def authorized_to_signv4_upload(resource_id):
+    ''' If user is authed to use resource_create then they are
+        authued to use signv4_upload()
+    '''
+    context = {
+        u'model': model,
+        u'session': model.Session,
+        u'user': g.user,
+        u'auth_user_obj': g.userobj
+    }
+
+    resource_dict = toolkit.get_action(u'resource_show')(
+            context, {
+                u'id': resource_id,
+            }
+        )
+
+    return authz.is_authorized('resource_create', context, resource_dict)
+
+
 def signv4_upload():
     aws_secret = ckan_config.get("ckanext.s3filestore.aws_secret_access_key", None)
     region = ckan_config.get("ckanext.s3filestore.region_name", None)
 
     to_sign = str(request.args.get('to_sign')).encode('utf-8')
+    canonical_request = request.args.get('canonical_request')
+
+    # assuming resource path in S3 follows the given structure
+    # '/<BUCKET_NAME>/<FOLDER_NAME>/resources/<RESOURCE_ID>/<FILE_NAME>'
+    resource_id = canonical_request.split('\n')[1].split('/')[4]
+    authorized = authorized_to_signv4_upload(resource_id)
+
+    if not authorized['success']:
+        return None
+    
     date_stamp = datetime.datetime.strptime(request.args.get('datetime'), '%Y%m%dT%H%M%SZ').strftime('%Y%m%d')
     service = 's3'
 
