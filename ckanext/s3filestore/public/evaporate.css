@@ -1,20 +1,3 @@
-#files {
-    display: inline;
-}
-#awsKey, #awsRegion {
-    width: 200px;
-}
-#s3Bucket {
-    width: 250px;
-}
-#signerUrl {
-    width: 350px;
-}
-label, input[type=radio], input[type=checkbox] { cursor: pointer }
-.errors {
-    color: #ff0000;
-}
-
 .progressbar-text {
     font-weight: bold;
 }

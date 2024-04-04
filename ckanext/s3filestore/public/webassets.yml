@@ -1,6 +1,6 @@
 evaporate_css:
   contents:
-    - evaporate_example.css
+    - evaporate.css
   output: ckanext-s3filestore/evaporate_%(version)s.css
   filters: cssrewrite
 
@@ -12,7 +12,6 @@ evaporate_js:
       - base/main
   contents:
     - vendor/aws-sdk.min.js
-    - vendor/js.cookie.js
     - vendor/progressbar.min.js
     - vendor/evaporate.js
     - js/s3filestore-direct-upload.js
