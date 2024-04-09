@@ -58,6 +58,12 @@ def signv4_upload():
 
     to_sign = str(request.args.get('to_sign')).encode('utf-8')
     canonical_request = request.args.get('canonical_request')
+    canonical_request_hash_encoded = sha256(canonical_request.encode('utf-8')).hexdigest().encode('utf-8')
+    to_sign_hash = to_sign.split(b'\n')[-1]
+
+    # check canonical_request hash and hash in to_sign matches
+    if to_sign_hash != canonical_request_hash_encoded:
+        return None
 
     # assuming resource path in S3 follows the given structure
     # '/<BUCKET_NAME>/<FOLDER_NAME>/resources/<RESOURCE_ID>/<FILE_NAME>'
