@@ -1,0 +1,12 @@
+<div
+    data-module="s3filestore-direct-upload"
+    data-module-bucket="{{ h.s3filestore_get_bucket }}"
+    data-module-aws_key="{{ h.s3filestore_get_aws_key }}"
+    data-module-host_url="{{ h.s3filestore_get_host_url }}"
+    data-module-region="{{ h.s3filestore_get_region }}"
+    data-module-package_id="{{ pkg_name }}"
+>
+<div id="progress-container"></div>
+{{ parent() }}
+
+</div>

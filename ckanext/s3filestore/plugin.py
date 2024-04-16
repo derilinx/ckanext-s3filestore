@@ -4,7 +4,7 @@ import ckantoolkit as toolkit
 
 import ckanext.s3filestore.uploader
 from ckanext.s3filestore.views import resource, uploads
-from ckanext.s3filestore.click_commands import upload_resources, upload_assets
+from ckanext.s3filestore.click_commands import upload_resources, upload_assets, fix_cors
 
 
 class S3FileStorePlugin(plugins.SingletonPlugin):
@@ -13,6 +13,7 @@ class S3FileStorePlugin(plugins.SingletonPlugin):
     plugins.implements(plugins.IUploader)
     plugins.implements(plugins.IBlueprint)
     plugins.implements(plugins.IClick)
+    plugins.implements(plugins.ITemplateHelpers)
 
     # IConfigurer
 
@@ -22,6 +23,8 @@ class S3FileStorePlugin(plugins.SingletonPlugin):
         # to fix downloading the HTML file instead of previewing when
         # 'webpage_view' is enabled
         toolkit.add_template_directory(config_, 'theme/templates')
+        toolkit.add_public_directory(config_, 'public')
+        toolkit.add_resource('public', 's3filestore')
 
     # IConfigurable
 
@@ -71,4 +74,17 @@ class S3FileStorePlugin(plugins.SingletonPlugin):
     # IClick
 
     def get_commands(self):
-        return [upload_resources, upload_assets]
+        return [upload_resources, upload_assets, fix_cors]
+
+    # ITemplateHelpers
+    def get_helpers(self):
+        config = toolkit.config
+        bucket = config.get('ckanext.s3filestore.aws_bucket_name', None)
+        if config.get('ckanext.s3filestore.aws_storage_path', None):
+            bucket = bucket + '/' + config.get('ckanext.s3filestore.aws_storage_path')
+
+        return {'s3filestore_get_bucket': bucket,
+                's3filestore_get_aws_key': config.get('ckanext.s3filestore.aws_access_key_id', None),
+                's3filestore_get_host_url': config.get('ckanext.s3filestore.host_name', None),
+                's3filestore_get_region': config.get('ckanext.s3filestore.region_name', None)
+                }
