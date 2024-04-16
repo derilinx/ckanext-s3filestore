@@ -1,0 +1,11 @@
+{% ckan_extends %}
+
+
+{% block form %}
+
+    {% asset 's3filestore/evaporate_js' %}
+    {% asset 's3filestore/evaporate_css' %}
+
+    {% snippet 's3filestore/snippets/direct_upload_module.html', pkg_name=pkg.name, parent=super %}
+
+{% endblock %}

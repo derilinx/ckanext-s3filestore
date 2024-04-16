@@ -2,15 +2,18 @@
    these badges work. The necessary Travis and Coverage config files have been
    generated for you.
 
-.. image:: https://travis-ci.com/keitaroinc/ckanext-s3filestore.svg?branch=master
-    :target: https://travis-ci.com/keitaroinc/ckanext-s3filestore
+.. image:: https://github.com/keitaroinc/ckanext-s3filestore/workflows/CI/badge.svg
+    :target: https://github.com/keitaroinc/ckanext-s3filestore/actions
 
 
-.. image:: https://coveralls.io/repos/github/keitaroinc/ckanext-s3filestore/badge.svg?branch=master
-     :target: https://coveralls.io/github/keitaroinc/ckanext-s3filestore?branch=master
+.. image:: https://coveralls.io/repos/github/keitaroinc/ckanext-s3filestore/badge.svg?branch=main
+     :target: https://coveralls.io/github/keitaroinc/ckanext-s3filestore?branch=main
 
 .. image:: https://img.shields.io/badge/python-3.8-blue.svg
     :target: https://www.python.org/downloads/release/python-384/
+
+.. image:: https://img.shields.io/pypi/v/ckanext-s3filestore
+    :target: https://pypi.org/project/ckanext-s3filestore
 
 
 
@@ -27,8 +30,9 @@ Use Amazon S3 or Minio<https://minio.io/> as a filestore for resources.
 Requirements
 ------------
 
-Requires CKAN 2.7+
+Requires CKAN 2.9+
 
+When installing this extension on CKAN versions prior 2.9 please use `ckan-2.8 <https://github.com/keitaroinc/ckanext-s3filestore/tree/ckan-2.8>`_ branch.
 
 ------------
 Installation
@@ -50,12 +54,33 @@ To install ckanext-s3filestore:
 
 3. Add ``s3filestore`` to the ``ckan.plugins`` setting in your CKAN
    config file (by default the config file is located at
-   ``/etc/ckan/default/production.ini``).
+   ``/etc/ckan/default/ckan.ini``).
 
 4. Restart CKAN. For example if you've deployed CKAN with Apache on Ubuntu::
 
      sudo service apache2 reload
 
+5. | Configure your S3 bucket for EvaporateJS to work, make sure your CORS settings for your S3
+     bucket looks similar to what is provided below.
+   | (The PUT allowed method and the ETag exposed header are critical).
+
+   The ``DELETE`` method is required to support aborting multipart
+   uploads.
+
+   .. code:: xml
+
+      <CORSConfiguration>
+          <CORSRule>
+              <AllowedOrigin>https://*.yourdomain.com</AllowedOrigin>
+              <AllowedOrigin>http://*.yourdomain.com</AllowedOrigin>
+              <AllowedMethod>PUT</AllowedMethod>
+              <AllowedMethod>POST</AllowedMethod>
+              <AllowedMethod>DELETE</AllowedMethod>
+              <AllowedMethod>GET</AllowedMethod>
+              <ExposeHeader>ETag</ExposeHeader>
+              <AllowedHeader>*</AllowedHeader>
+          </CORSRule>
+      </CORSConfiguration>
 
 ---------------
 Config Settings
@@ -65,7 +90,7 @@ Required::
 
     ckanext.s3filestore.aws_bucket_name = a-bucket-to-store-your-stuff
     ckanext.s3filestore.region_name= region-name
-    ckanext.s3filestore.signature_version = signature (s3v4)
+    ckanext.s3filestore.signature_version = s3v4
 
 Conditional::
 
@@ -102,6 +127,18 @@ Optional::
 
     # Defines how long a signed URL is valid (default 1 hour).
     ckanext.s3filestore.signed_url_expiry = 3600
+
+    # Don't check for access on each startup
+    ckanext.s3filestore.check_access_on_startup = false
+
+
+-----------------
+CLI
+-----------------
+
+To upload all local resources located in `ckan.storage_path` location dir to the configured S3 bucket use::
+
+    ckan -c /etc/ckan/default/ckan.ini s3-upload
 
 
 ------------------------
