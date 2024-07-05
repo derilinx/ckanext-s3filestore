@@ -1862,7 +1862,7 @@
         awsRequest.currentXhr = xhr;
 
         var stringToSign = awsRequest.stringToSign(),
-            url = [con.signerUrl, '?to_sign=', stringToSign, '&datetime=', request.dateString];
+            url = [con.signerUrl, '&to_sign=', stringToSign, '&datetime=', request.dateString];
         if (con.sendCanonicalRequestToSignerUrl) {
           url.push('&canonical_request=');
           url.push(encodeURIComponent(awsRequest.canonicalRequest()));
