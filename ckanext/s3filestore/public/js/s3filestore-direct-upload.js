@@ -22,15 +22,16 @@ ckan.module('s3filestore-direct-upload', function($, _) {
             console.log("In _onPerformUpload");
             var self = this;
             this._bucket = this.options.bucket + '/resources/' + resource_id;
-            var sandbox = this.sandbox;
+            this._host = this.options.host_url == 'None' ? 'https://s3.'+this.options.region+'.amazonaws.com' : this.options.host_url + '/' + this._bucket;
+            // var sandbox = this.sandbox;
             Evaporate.create({
-                signerUrl: '/auth/signv4_upload',
+                signerUrl: '/auth/signv4_upload?resource_id=' + resource_id,
                 aws_key: this.options.aws_key,
                 bucket: this._bucket,
                 sendCanonicalRequestToSignerUrl: false,
-                aws_url: this.options.host_url + '/' + this._bucket,
+                aws_url: this._host,
                 awsRegion: this.options.region,
-                cloudfront: true,
+                cloudfront: this.options.host_url == 'None' ? false : true,
                 awsSignatureVersion: '4',
                 computeContentMd5: true,
                 cryptoMd5Method: function (data) { return AWS.util.crypto.md5(data, 'base64'); },
