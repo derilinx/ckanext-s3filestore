@@ -282,7 +282,7 @@ ckan.module('s3filestore-direct-upload', function($, _) {
                         msg,
                         'error'
                     );
-                    self._onHandleError('Unable to save resource');
+                    self._onHandleError('Unable to save resource. Name is required.');
                 }
             );
 
