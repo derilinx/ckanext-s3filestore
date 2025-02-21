@@ -329,8 +329,25 @@ ckan.module('s3filestore-direct-upload', function($, _) {
         },
 
         _onFinishUpload: function() {
-            var self = this;			
+            var self = this;
+            if (self._pressedSaveButton == 'go-metadata') {
+                this.sandbox.client.call(
+                    'POST',
+                    's3filestore_go_metadata',
+                    { 'id': self._packageId },
+                    self._onDatastoreSubmit,
+                    function (err) {
+                        self._onHandleError(self.i18n("unable to activate dataset"));
+                    }
+                )
+            } else {
+                self._onDatastoreSubmit()
+            }
+        },
 
+        _onDatastoreSubmit: function() {
+            var self = this;
+            // undone mimetype gating here
             this.sandbox.client.call(
                 'POST',
                 'datapusher_submit',
@@ -338,41 +355,43 @@ ckan.module('s3filestore-direct-upload', function($, _) {
                     'resource_id': this._resourceId,
                     'ignore_hash': true
                 },
-                function (data) {
-                    console.log(data);
-                    self._onDisableSave(false);
-
-                    if (self._resourceId && self._packageId){
-                        self.sandbox.notify(
-                            'Success',
-                            self.i18n('upload_completed'),
-                            'success'
-                        );
-                        // self._form.remove();
-                        if (self._pressedSaveButton == 'again') {
-                            var path = '/dataset/new_resource/';
-                        } else if (self._pressedSaveButton == 'go-dataset') {
-                            var path = '/dataset/edit/';
-                        } else {
-                            var path = '/dataset/';
-                        }
-                        var redirect_url = self.sandbox.url(path + self._packageId);
-
-                        self._form.attr('action', redirect_url);
-                        self._form.attr('method', 'GET');
-                        self.$('[name]').attr('name', null);
-                        setTimeout(function(){
-                            self._form.submit();
-                        }, 3000);
-
-                    }
-                },
+                self._onFinalRedirect,
                 function (err) {
                     console.log(err);
-                    self._onHandleError(self.i18n('unable_to_finish'));
+                    self._onHandleError(self.i18n('unable_to_post_to_datastore'));
                 }
             );
                 
+        },
+
+        _onFinalRedirect: function(data) {
+            var self = this;
+            console.log(data);
+            self._onDisableSave(false);
+
+            if (self._resourceId && self._packageId){
+                self.sandbox.notify(
+                    'Success',
+                    self.i18n('upload_completed'),
+                    'success'
+                );
+                // self._form.remove();
+                if (self._pressedSaveButton == 'again') {
+                    var path = '/dataset/new_resource/';
+                } else if (self._pressedSaveButton == 'go-dataset') {
+                    var path = '/dataset/edit/';
+                } else {
+                    var path = '/dataset/';
+                }
+                var redirect_url = self.sandbox.url(path + self._packageId);
+
+                self._form.attr('action', redirect_url);
+                self._form.attr('method', 'GET');
+                self.$('[name]').attr('name', null);
+                setTimeout(function(){
+                    self._form.submit();
+                }, 3000);
+            }
         },
 
         _onHandleError: function (msg) {

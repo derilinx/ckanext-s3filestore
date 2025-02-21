@@ -14,6 +14,7 @@ class S3FileStorePlugin(plugins.SingletonPlugin):
     plugins.implements(plugins.IBlueprint)
     plugins.implements(plugins.IClick)
     plugins.implements(plugins.ITemplateHelpers)
+    plugins.implements(plugins.IActions)
 
     # IConfigurer
 
@@ -88,3 +89,18 @@ class S3FileStorePlugin(plugins.SingletonPlugin):
                 's3filestore_get_host_url': config.get('ckanext.s3filestore.host_name', None),
                 's3filestore_get_region': config.get('ckanext.s3filestore.region_name', None)
                 }
+
+
+    # IActions
+    def get_actions(self):
+        return { 's3filestore_go_metadata': go_metadata }
+
+        
+def go_metadata(context, data_dict):
+    package_id = data_dict['id']
+    
+    toolkit.check_access('package_update', context, data_dict)
+    context = dict(context, allow_state_change=True)
+    return toolkit.get_action('package_patch')(context, {'id': package_id,
+                                                         'state': 'active'})
+        
