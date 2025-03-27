@@ -1,3 +1,4 @@
+/* global ckan, Evaporate, AWS, ProgressBar */
 ckan.module('s3filestore-direct-upload', function($, _) {
 
     return {
@@ -59,7 +60,7 @@ ckan.module('s3filestore-direct-upload', function($, _) {
 
                     var fileKey = this._bucket + '/' + name;
 
-                    callback_methods = callbacks(file, fileKey);
+                    const callback_methods = callbacks(file, fileKey);
 
                     var promise = _e_.add({
                         name: name,
@@ -78,7 +79,7 @@ ckan.module('s3filestore-direct-upload', function($, _) {
                                 } else {
                                     console.log('Did not re-upload', requestedName, 'because it exists as', awsKey);
                                 }
-                            }
+                            };
                         })(name)
                         );
 
@@ -88,51 +89,51 @@ ckan.module('s3filestore-direct-upload', function($, _) {
 
                     ["#pause-all", "#pause-all-force", "#cancel-all"].forEach(function (v) { $(v).show(); });
 
-                    allCompleted = Promise.all(filePromises)
+                    const allCompleted = Promise.all(filePromises)
                         .then(function () {
                             console.log('All files were uploaded successfully.');
                             self._onFinishUpload();
                         }, function (reason) {
                             console.log('All files were not uploaded successfully:', reason);
-                        })
+                        });
 
-        
+
                 $("#pause-all").hide().click(function () {
                     _e_.pause();
                 });
-        
+
                 $("#cancel-all").hide().click(function () {
                     _e_.cancel();
                 });
-        
+
                 $("#pause-all-force").hide().click(function () {
                     _e_.pause(undefined, {force: true});
                 });
-        
+
                 $("#resume").hide().click(function () {
                     _e_.resume();
                     $("#resume").hide();
                 });
-        
+
                 function callbacks(file, fileKey) {
-        
+
                     var progress_line = $('<div class="progress-line"/>'),
                             line,
                             progress,
                             file_id;
-        
+
                     $('#progress-container')
                             .append(progress_line);
-        
+
                     progress_line
                             .append('<span>' + file.name + '</span>')
                             .append('<div class="line"/>');
-        
+
                     var status = $('<span class="status"></span>');
                     progress_line.append(status);
                     var speed = $('<span class="speed">786 Kbs</span>');
                     progress_line.append(speed);
-        
+
                     line = new ProgressBar.Line(progress_line.find('.line')[0], {
                         strokeWidth: 10,
                         easing: 'easeInOut',
@@ -158,16 +159,16 @@ ckan.module('s3filestore-direct-upload', function($, _) {
                             bar.setText((bar.value() * 100).toFixed(0) + '%');
                         }
                     });
-        
+
                     progress_line.find('svg path').removeAttr('stroke');
                     progress_line.find('.progressbar-text').css('color', '');
-        
-        
+
+
                     function markComplete(className) {
                         progress_line.addClass(className);
                         status.text(className.charAt(0).toUpperCase() + className.slice(1));
                     }
-        
+
                     return {
                         progress: function (progressValue, data) {
                             progress = progressValue;
@@ -175,7 +176,7 @@ ckan.module('s3filestore-direct-upload', function($, _) {
                                 'Total Loaded:', data && data.loaded ? data.loaded : '',
                                 'Speed:', data && data.speed ? data.speed : '',
                                 'Formatted speed:', data && data.speed ? data.readableSpeed + 's' : '',
-                                'Minutes left:', data && data.secondsLeft ? Math.round(data.secondsLeft / 60) : '')
+                                'Minutes left:', data && data.secondsLeft ? Math.round(data.secondsLeft / 60) : '');
                             line.animate(progressValue);
                             if(data) {
                             var xferRate = data.speed ? '<br />' + data.readableSpeed + "s" : '',
@@ -207,7 +208,7 @@ ckan.module('s3filestore-direct-upload', function($, _) {
                             markComplete('completed');
                         },
                         progress_line: progress_line
-                    }
+                    };
                 }
                 },
                 function (reason) {
@@ -267,7 +268,7 @@ ckan.module('s3filestore-direct-upload', function($, _) {
                     document.getElementById("content").scrollIntoView();
                     self._onPerformUpload(file, formData.package_id, self._resourceId);
                     self._id.val(result.id);
-                    self._changeTaskState(self._resourceId)
+                    self._changeTaskState(self._resourceId);
                     // this notify may not be needed
                     // self.sandbox.notify(
                     //     result.id,
@@ -338,9 +339,9 @@ ckan.module('s3filestore-direct-upload', function($, _) {
                     function (err) {
                         self._onHandleError(self.i18n("unable to activate dataset"));
                     }
-                )
+                );
             } else {
-                self._onDatastoreSubmit()
+                self._onDatastoreSubmit();
             }
         },
 
@@ -360,7 +361,7 @@ ckan.module('s3filestore-direct-upload', function($, _) {
                     self._onHandleError(self.i18n('unable_to_post_to_datastore'));
                 }
             );
-                
+
         },
 
         _onFinalRedirect: function(data) {
@@ -375,12 +376,13 @@ ckan.module('s3filestore-direct-upload', function($, _) {
                     'success'
                 );
                 // self._form.remove();
+                let path;
                 if (self._pressedSaveButton == 'again') {
-                    var path = '/dataset/new_resource/';
+                    path = '/dataset/new_resource/';
                 } else if (self._pressedSaveButton == 'go-dataset') {
-                    var path = '/dataset/edit/';
+                    path = '/dataset/edit/';
                 } else {
-                    var path = '/dataset/';
+                    path = '/dataset/';
                 }
                 var redirect_url = self.sandbox.url(path + self._packageId);
 
@@ -404,6 +406,3 @@ ckan.module('s3filestore-direct-upload', function($, _) {
 
     };
 });
-
-
-    
