@@ -86,6 +86,8 @@ To install ckanext-s3filestore:
 Config Settings
 ---------------
 
+**NOTE: USE SEPARATE BUCKETS FOR STAGING AND PRODUCTION**
+
 Required::
 
     ckanext.s3filestore.aws_bucket_name = a-bucket-to-store-your-stuff
