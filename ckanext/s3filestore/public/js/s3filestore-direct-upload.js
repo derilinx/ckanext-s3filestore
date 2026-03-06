@@ -10,8 +10,8 @@ ckan.module('s3filestore-direct-upload', function($, _) {
         initialize: function() {
             $.proxyAll(this, /_on/);
             this._form = this.$('form');
-            this._file = $('#field-image-upload');
-            this._url = $('#field-image-url');
+            this._file = $('#field-resource-upload');
+            this._url = $('#field-resource-url');
             this._save = $('[name=save]');
             this._id = $('input[name=id]');
 
