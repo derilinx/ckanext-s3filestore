@@ -1769,6 +1769,8 @@
 
       addHeader('Host', awsRequest.awsHost);
 
+      addHeader('x-amz-content-sha256', this.getPayloadSha256Content());
+
       if (this.request.contentType) {
         addHeader('Content-Type', this.request.contentType || '');
       }
