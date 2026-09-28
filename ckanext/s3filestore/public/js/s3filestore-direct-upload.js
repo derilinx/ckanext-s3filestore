@@ -10,8 +10,9 @@ ckan.module('s3filestore-direct-upload', function($, _) {
         initialize: function() {
             $.proxyAll(this, /_on/);
             this._form = this.$('form');
-            this._file = $('#field-resource-upload');
-            this._url = $('#field-resource-url');
+            // CKAN >= 2.11 || CKAN < 2.11
+            this._file = $('#field-resource-upload') || $('#field-image-upload');
+            this._url = $('#field-resource-url') || $('#field-image-url');
             this._save = $('[name=save]');
             this._id = $('input[name=id]');
 
@@ -21,8 +22,10 @@ ckan.module('s3filestore-direct-upload', function($, _) {
         _onPerformUpload: function(file, dataset_id, resource_id) {
             console.log("In _onPerformUpload");
             var self = this;
+            const is_aws = (this.options.host_url == 'None');
+
             this._bucket = this.options.bucket + '/resources/' + resource_id;
-            this._host = this.options.host_url == 'None' ? 'https://s3.'+this.options.region+'.amazonaws.com' : this.options.host_url + '/' + this._bucket;
+            this._host = is_aws ? 'https://s3.'+this.options.region+'.amazonaws.com' : this.options.host_url + '/' + this._bucket;
             // var sandbox = this.sandbox;
             Evaporate.create({
                 signerUrl: '/auth/signv4_upload?resource_id=' + resource_id,
@@ -31,7 +34,7 @@ ckan.module('s3filestore-direct-upload', function($, _) {
                 sendCanonicalRequestToSignerUrl: false,
                 aws_url: this._host,
                 awsRegion: this.options.region,
-                cloudfront: this.options.host_url == 'None' ? false : true,
+                cloudfront: !is_aws,
                 awsSignatureVersion: '4',
                 computeContentMd5: true,
                 cryptoMd5Method: function (data) { return AWS.util.crypto.md5(data, 'base64'); },
