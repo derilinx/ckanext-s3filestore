@@ -11,8 +11,9 @@ ckan.module('s3filestore-direct-upload', function($, _) {
         initialize: function() {
             $.proxyAll(this, /_on/);
             this._form = this.$('form');
-            this._file = $('#field-image-upload');
-            this._url = $('#field-image-url');
+            // CKAN >= 2.11 || CKAN < 2.11
+            this._file = $('#field-resource-upload') || $('#field-image-upload');
+            this._url = $('#field-resource-url') || $('#field-image-url');
             this._save = $('[name=save]');
             this._id = $('input[name=id]');
 
@@ -22,16 +23,19 @@ ckan.module('s3filestore-direct-upload', function($, _) {
         _onPerformUpload: function(file, dataset_id, resource_id) {
             console.log("In _onPerformUpload");
             var self = this;
+            const is_aws = (this.options.host_url == 'None');
+
             this._bucket = this.options.bucket + '/resources/' + resource_id;
-            var sandbox = this.sandbox;
+            this._host = is_aws ? 'https://s3.'+this.options.region+'.amazonaws.com' : this.options.host_url + '/' + this._bucket;
+            // var sandbox = this.sandbox;
             Evaporate.create({
-                signerUrl: '/auth/signv4_upload',
+                signerUrl: '/auth/signv4_upload?resource_id=' + resource_id,
                 aws_key: this.options.aws_key,
                 bucket: this._bucket,
                 sendCanonicalRequestToSignerUrl: false,
-                aws_url: this.options.host_url + '/' + this._bucket,
+                aws_url: this._host,
                 awsRegion: this.options.region,
-                cloudfront: true,
+                cloudfront: !is_aws,
                 awsSignatureVersion: '4',
                 computeContentMd5: true,
                 cryptoMd5Method: function (data) { return AWS.util.crypto.md5(data, 'base64'); },
@@ -282,7 +286,7 @@ ckan.module('s3filestore-direct-upload', function($, _) {
                         msg,
                         'error'
                     );
-                    self._onHandleError('Unable to save resource');
+                    self._onHandleError('Unable to save resource. Name is required.');
                 }
             );
 
@@ -383,6 +387,36 @@ ckan.module('s3filestore-direct-upload', function($, _) {
                     path = '/dataset/edit/';
                 } else {
                     path = '/dataset/';
+                }
+                var redirect_url = self.sandbox.url(path + self._packageId);
+
+                self._form.attr('action', redirect_url);
+                self._form.attr('method', 'GET');
+                self.$('[name]').attr('name', null);
+                setTimeout(function(){
+                    self._form.submit();
+                }, 3000);
+            }
+        },
+
+        _onFinalRedirect: function(data) {
+            var self = this;
+            console.log(data);
+            self._onDisableSave(false);
+
+            if (self._resourceId && self._packageId){
+                self.sandbox.notify(
+                    'Success',
+                    self.i18n('upload_completed'),
+                    'success'
+                );
+                // self._form.remove();
+                if (self._pressedSaveButton == 'again') {
+                    var path = '/dataset/new_resource/';
+                } else if (self._pressedSaveButton == 'go-dataset') {
+                    var path = '/dataset/edit/';
+                } else {
+                    var path = '/dataset/';
                 }
                 var redirect_url = self.sandbox.url(path + self._packageId);
 

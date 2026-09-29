@@ -82,9 +82,7 @@ def signv4_upload():
     if to_sign_hash != canonical_request_hash_encoded:
         return None
 
-    # assuming resource path in S3 follows the given structure
-    # '/<BUCKET_NAME>/<FOLDER_NAME>/resources/<RESOURCE_ID>/<FILE_NAME>'
-    resource_id = canonical_request.split('\n')[1].split('/')[4]
+    resource_id = request.args.get('resource_id')
     authorized = authorized_to_signv4_upload(resource_id)
 
     if not authorized['success']:
