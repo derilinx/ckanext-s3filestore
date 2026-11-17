@@ -11,9 +11,10 @@ ckan.module('s3filestore-direct-upload', function($, _) {
         initialize: function() {
             $.proxyAll(this, /_on/);
             this._form = this.$('form');
-            // CKAN >= 2.11 || CKAN < 2.11
-            this._file = $('#field-resource-upload') || $('#field-image-upload');
-            this._url = $('#field-resource-url') || $('#field-image-url');
+            // CKAN >= 2.11 field-resource-*
+            // CKAN < 2.11 field-image-*
+            this._file = $('#field-resource-upload, #field-image-upload').first();
+            this._url = $('#field-resource-url, #field-image-url').first();
             this._save = $('[name=save]');
             this._id = $('input[name=id]');
 
